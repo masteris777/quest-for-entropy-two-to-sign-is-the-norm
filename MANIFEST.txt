@@ -1,5 +1,5 @@
 5297b35c3ad3414b  .gitignore
-b2d8cadcced11f4c  article.md
+45d57115afd8efdb  article.md
 4cd7dee9948707d0  article_gifs.py
 94dcdbe5afdb9348  article_signing.py
 f0bb8cdd169a91c9  article_tables.py

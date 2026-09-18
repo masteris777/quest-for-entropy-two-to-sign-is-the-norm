@@ -122,7 +122,7 @@ Stripped of books and ledgers, in the language physics already uses, the claim t
 
 The whole machine is one file, numpy only, and it runs the four exams in a couple of minutes: [github.com/masteris777/quest-for-entropy-two-to-sign-is-the-norm](https://github.com/masteris777/quest-for-entropy-two-to-sign-is-the-norm), one command: `python run_all.py`. The animations are in the same repository. And every move above can be made one button at a time, with the arithmetic written out as it happens, on [the table bench](https://questforentropy.com/demo/the-table-bench).
 
-Archived: DOI [10.5281/zenodo.22832653](https://zenodo.org/records/22832653).
+Archived: DOI [10.5281/zenodo.22833368](https://zenodo.org/records/22833368).
 
 ## How this was made
 
