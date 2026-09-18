@@ -1,4 +1,4 @@
-"""Everything this companion claims, in one command: the three exams, then every
+"""Everything this companion claims, in one command: the four exams, then every
 figure and both animations, regenerated into assets/.
 
     python run_all.py

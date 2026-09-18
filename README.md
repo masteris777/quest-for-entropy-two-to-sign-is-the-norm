@@ -21,7 +21,7 @@ and are written into `assets/`, replacing the shipped copies with identical ones
 
 | file | what it is |
 |---|---|
-| `table_logic.py` | the whole machine: the table, the turn, the meeting, the settlement, and its three exams |
+| `table_logic.py` | the whole machine: the table, the turn, the meeting, the settlement, and its four exams |
 | `article_worked.py` | one measurement with the numbers (`assets/tbl_worked.png`) |
 | `article_tables.py` | the table sizes, the four cases of one tick, the ladder numbers |
 | `article_signing.py` | the settlement tick by tick, with the toy's own unitdraws (`assets/tbl_signing.png`) |

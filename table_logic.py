@@ -9,10 +9,12 @@ The TABLE is the state: one axis per thread, two candidates per axis, one ARROW 
                         a REFUSAL (nothing posted, sign again at the next tick)
 No dice: a unitdraw is the hash of the thread's previous unitdraw (the first hashes its name).
 
-Three exams, three table sizes:
+Four exams, four table sizes:
   1 axis : the Born ladder     - only two books land on cos^2; one gives lengths, three give cubes
   2 axes : the Bell exam       - the table after a meeting reaches 2*sqrt(2); a product table cannot pass 2
   3 axes : no-signalling       - a detector meeting P leaves B's odds untouched, B's correlations not
+  N axes : the chain           - many entangled threads settle one pair at a time and the joint line lands
+                                 on |arrow|^2 for any N and any order; one fact signed by three books does not
 Run:  python table_logic.py   (numpy only)
 """
 import hashlib
@@ -189,7 +191,54 @@ def exam_no_signalling(n: int = 4000) -> None:
     print("  B's odds did not move; whom B agrees with did.")
 
 
+# ---------------------------------------------------------------- exam 4: many axes, the chain
+def exam_chain(n: int = 6000) -> None:
+    """Many threads share one table. The toy settles it one pairwise fact at a time (each thread with
+    its own counterparty, two books per fact) and the joint line is counted against |arrow|^2.
+    The signer count per fact stays two however many threads are on the table."""
+    print("\nEXAM 4 - many axes. Threads settle one pair at a time; the joint line counted against |arrow|^2")
+    rng = np.random.default_rng(7)
+
+    def ghz(k):
+        z = np.zeros((2,) * k, complex); z[(0,) * k] = z[(1,) * k] = 1; return z / np.sqrt(2)
+
+    def w(k):
+        z = np.zeros((2,) * k, complex)
+        for i in range(k):
+            idx = [0] * k; idx[i] = 1; z[tuple(idx)] = 1
+        return z / np.sqrt(k)
+
+    def rand(k):
+        z = rng.normal(size=(2,) * k) + 1j * rng.normal(size=(2,) * k); return z / np.linalg.norm(z)
+
+    def chain(z, order):
+        counts = np.zeros(z.shape); ticks = []
+        for _ in range(n):
+            t = Table(z.copy()); line = [0] * z.ndim
+            for p in order:
+                line[p], tk = t.settle(p, None); ticks.append(tk)
+            counts[tuple(line)] += 1
+        return counts / n, np.mean(ticks)
+
+    tables = [("GHZ", ghz(3)), ("W", w(3)), ("random", rand(3)), ("GHZ", ghz(4)), ("random", rand(4)), ("random", rand(5))]
+    for label, z in tables:
+        freq, mean_ticks = chain(z, range(z.ndim))
+        print(f"  {label:6} {z.ndim} threads: rms from the key {np.sqrt(np.mean((freq - np.abs(z) ** 2) ** 2)):.4f}, "
+              f"mean ticks per fact {mean_ticks:.2f}")
+    z = tables[2][1]
+    rev, _ = chain(z, range(2, -1, -1))
+    print(f"  random 3 threads settled in the opposite order: rms from the key {np.sqrt(np.mean((rev - np.abs(z) ** 2) ** 2)):.4f}")
+    key = (np.abs(z) ** 2).ravel()
+    print("  one fact on all three threads at once, signed by k books (exact odds), rms from the key: " + ", ".join(
+        f"{k} -> {np.sqrt(np.mean((Table(z.copy()).odds((0, 1, 2), k).ravel() - key) ** 2)):.3f}" for k in (1, 2, 3, 4)))
+    t30 = Table([np.cos(np.pi / 6), 1j * np.sin(np.pi / 6)])
+    print("  the whole ladder, exact odds of 0 at 30 deg (key 0.750): " + ", ".join(
+        f"{k} -> {t30.odds((0,), k)[0]:.3f}" for k in range(1, 9)))
+    print("  more threads add links to the chain, never signatures to a fact.")
+
+
 if __name__ == "__main__":
     exam_born()
     exam_bell()
     exam_no_signalling()
+    exam_chain()

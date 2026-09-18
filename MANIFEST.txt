@@ -1,5 +1,5 @@
 5297b35c3ad3414b  .gitignore
-fe2592b3e9bd9e3a  article.md
+b2d8cadcced11f4c  article.md
 4cd7dee9948707d0  article_gifs.py
 94dcdbe5afdb9348  article_signing.py
 f0bb8cdd169a91c9  article_tables.py
@@ -18,7 +18,7 @@ fb9d9974a96cca97  assets/tbl_tables.png
 4fbe2e98b2a489d6  assets/tbl_who_signs.png
 383b8db28924fd89  assets/tbl_worked.png
 f5639ed7a01e3808  bench/index.html
-9ddb1d5ce3ef6072  explanation.md
-3375c313152d3681  README.md
-916c84b745657f51  run_all.py
-84b007b549a5275f  table_logic.py
+61479e8017e33a95  explanation.md
+31d0eee28dd0d057  README.md
+a2b0ab7613871c65  run_all.py
+b76f60624c6afe27  table_logic.py
