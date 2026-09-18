@@ -1,0 +1,978 @@
+<title>The Table Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#f6f5f1; --surface:#ffffff; --sunk:#efece5;
+    --ink:#23201c; --muted:#77736c; --rule:#e0dbd2;
+    --p:#c07016; --p-soft:#f6e6d1; --m:#12806f; --m-soft:#d9ece7;
+    --flag:#b83a2b; --held:#12806f;
+    --shadow:0 1px 2px rgba(35,32,28,.06), 0 8px 24px rgba(35,32,28,.05);
+    --serif:"IBM Plex Serif",Georgia,serif;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#181715; --surface:#221f1c; --sunk:#1e1c1a;
+      --ink:#ece6dc; --muted:#98918a; --rule:#35322d;
+      --p:#e09a45; --p-soft:#3a2c19; --m:#46bda9; --m-soft:#153029;
+      --flag:#e0715f; --held:#46bda9;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#181715; --surface:#221f1c; --sunk:#1e1c1a;
+    --ink:#ece6dc; --muted:#98918a; --rule:#35322d;
+    --p:#e09a45; --p-soft:#3a2c19; --m:#46bda9; --m-soft:#153029;
+    --flag:#e0715f; --held:#46bda9;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;margin:0}
+  .wrap{max-width:1020px;margin:0 auto;padding-inline:20px;padding-block:32px 56px}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,5vw,40px);line-height:1.1;margin:.2em 0 .15em;text-wrap:balance;letter-spacing:-.01em}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+  .lede{color:var(--muted);max-width:64ch;margin:0 0 22px}
+  .lede b{color:var(--ink);font-weight:500}
+
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;background:var(--surface);
+       border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);margin-bottom:8px}
+  .bar .spacer{flex:1 1 auto}
+  .hint{font-size:13px;color:var(--muted)}
+
+  button{font:500 14px/1 var(--sans);color:var(--ink);background:var(--surface);border:1px solid var(--rule);
+         border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .12s,border-color .12s,transform .08s}
+  button:hover:not(:disabled){background:var(--sunk)}
+  button:active:not(:disabled){transform:translateY(1px)}
+  button:disabled{opacity:.38;cursor:not-allowed}
+  button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .tick-p{border-color:var(--p);color:var(--p);font-weight:600}
+  .tick-p:hover:not(:disabled){background:var(--p-soft)}
+  .tick-m{border-color:var(--m);color:var(--m);font-weight:600}
+  .tick-m:hover:not(:disabled){background:var(--m-soft)}
+  .undo{padding:9px 11px;font-family:var(--mono);color:var(--muted)}
+  .big{font-size:15px;padding:12px 26px;font-weight:600;border-color:var(--ink)}
+  .bk{font-family:var(--mono);padding:7px 14px;color:var(--muted)}
+  .bk.on{border-color:var(--ink);color:var(--ink);font-weight:600;background:var(--sunk)}
+
+  .step{background:var(--surface);border:1px solid var(--rule);border-radius:12px;box-shadow:var(--shadow);
+        padding:20px;margin-top:22px}
+  .step[hidden]{display:none}
+  .steptitle{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;margin:0 0 14px}
+  .steptitle h2{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0;font-weight:600}
+  .steptitle .n{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+  .benches{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:760px){.benches{grid-template-columns:1fr}}
+  .bench{display:flex;flex-direction:column;gap:14px;transition:opacity .35s}
+  .bench.merged{opacity:.4}
+  .bench h3{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0;font-weight:600}
+  .bench.p h3{color:var(--p)} .bench.m h3{color:var(--m)}
+  .bench h3 span{color:var(--muted);font-weight:400;letter-spacing:.04em;text-transform:none}
+  .stage{display:flex;justify-content:center;padding:6px 0 2px;min-height:170px;align-items:center}
+
+  .cell{width:96px;background:var(--surface);border:1px solid var(--rule);display:flex;flex-direction:column;
+        align-items:center;gap:3px;padding:8px 6px 7px;transition:background .25s,border-color .25s,transform .38s}
+  .cell.lit{background:var(--p-soft)}
+  .cell.posted{outline:2px solid var(--flag);outline-offset:-2px}
+  .cell svg.dial{width:54px;height:54px;display:block;overflow:visible}
+  .cell .ring{fill:none;stroke:var(--rule);stroke-width:.045}
+  .cell .arrow{fill:currentColor;stroke:currentColor;stroke-width:.075;stroke-linejoin:round;stroke-linecap:round;color:var(--ink)}
+  .cell .nil{fill:var(--rule)}
+  .cell .num{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cell .bar-l{width:72px;height:5px;background:var(--rule);border-radius:3px;overflow:hidden}
+  .cell .bar-l i{display:block;height:100%;background:var(--ink);opacity:.55;transition:width .06s linear}
+  .lab{font-family:var(--mono);font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+  .lab.p{color:var(--p)} .lab.m{color:var(--m)}
+
+  .strip-p{display:grid;grid-template-columns:auto auto;gap:0 8px;align-items:center}
+  .strip-m{display:grid;grid-template-rows:auto auto;gap:6px 0;justify-items:center}
+  .strip-m .row{display:grid;grid-template-columns:auto auto}
+  .strip-m .row .cell + .cell{border-left:none}
+  .strip-m .heads{display:grid;grid-template-columns:96px 96px}
+
+  .axis{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.08em}
+  .axis svg{display:block}
+  .axis.p{color:var(--p);flex-direction:column}
+  .axis.p span{writing-mode:vertical-rl;transform:rotate(180deg)}
+  .axis.m{color:var(--m)}
+
+  .readout{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--mono);font-size:12px;color:var(--muted);
+           font-variant-numeric:tabular-nums;border-top:1px dashed var(--rule);padding-top:12px}
+  .readout b{color:var(--ink);font-weight:500}
+
+  .dialrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .dialrow label{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .dialrow output{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:42px}
+  input[type=range]{flex:1 1 90px;min-width:90px;accent-color:var(--ink)}
+  .bench.p input[type=range]{accent-color:var(--p)}
+  .bench.m input[type=range]{accent-color:var(--m)}
+  .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  .aside{font-size:13.5px;color:var(--muted);border-left:2px solid var(--rule);padding-left:14px;margin:18px 0 0;max-width:72ch}
+  .aside b{color:var(--ink);font-weight:500}
+
+  .center{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .caption{font-size:13px;color:var(--muted);text-align:center;max-width:58ch;min-height:20px}
+
+  .work{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;background:var(--sunk);
+        border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;overflow-x:auto}
+  .work .row{white-space:pre;color:var(--muted)}
+  .work .row b{color:var(--ink);font-weight:500}
+  .work .row.on{color:var(--ink)}
+  .work .sep{height:1px;background:var(--rule);margin:6px 0}
+
+  .jbody{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .jtable{display:grid;grid-template-columns:auto auto;gap:8px;align-items:center;padding-top:4px}
+  .grid2{display:grid;grid-template-columns:auto 96px 96px;gap:0 8px;align-items:center}
+  .grid2 .cell.c01,.grid2 .cell.c11{border-left:none}
+  .grid2 .cell.c10,.grid2 .cell.c11{border-top:none}
+  .swapping{transform:translateX(96px)}
+  .swapping.back{transform:translateX(-96px)}
+  .panel{flex:1 1 250px;min-width:230px;display:flex;flex-direction:column;gap:14px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--mono);font-size:12px;border:1px solid var(--rule);border-radius:999px;padding:5px 11px;
+        color:var(--muted);font-variant-numeric:tabular-nums}
+  .chip b{color:var(--ink);font-weight:500}
+  .chip.held{border-color:var(--held);color:var(--held)}
+  .chip.held b{color:var(--held)}
+  .chip.flag{border-color:var(--flag);color:var(--flag)}
+  .chip.flag b{color:var(--flag)}
+  .lines{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;display:grid;
+         grid-template-columns:auto auto;gap:3px 14px;color:var(--muted)}
+  .lines b{color:var(--ink);font-weight:500;text-align:right}
+  .log{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--sunk);border-radius:8px;
+       padding:10px 12px;max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+  .log div:first-child{color:var(--ink)}
+
+  .ruler{position:relative;height:22px;border:1px solid var(--rule);border-radius:3px;overflow:visible;display:flex;background:var(--surface)}
+  .ruler .seg{height:100%;border-right:1px solid var(--rule)}
+  .ruler .seg:last-child{border-right:none}
+  .ruler .needle{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink);transform:translateX(-1px)}
+  .ruler .needle::after{content:attr(data-r);position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+        font-family:var(--mono);font-size:10.5px;color:var(--ink);background:var(--surface);padding:0 3px}
+  .tickrow{display:grid;grid-template-columns:56px 72px 1fr;gap:10px 12px;align-items:center;padding:16px 0 12px;border-top:1px dashed var(--rule)}
+  .tickrow .who{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .tickrow .who.p{color:var(--p)} .tickrow .who.m{color:var(--m)}
+  .tickrow .n{font-family:var(--mono);font-size:12px;font-weight:600;align-self:start;padding-top:4px}
+  .tickrow .verdict{grid-column:2/-1;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .tickrow .verdict.fact{color:var(--flag);font-weight:600}
+  @media (max-width:560px){
+    .tickrow{grid-template-columns:72px 1fr}
+    .tickrow .n{grid-column:1/-1}
+    .tickrow .verdict{grid-column:1/-1}
+  }
+  .legend{display:flex;flex-direction:column;gap:3px;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:10px}
+  .legend b{color:var(--ink);font-weight:500}
+  .tally{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;display:grid;
+         grid-template-columns:auto auto auto auto;gap:3px 16px;color:var(--muted);margin-top:14px}
+  .tally b{color:var(--ink);font-weight:500;text-align:right}
+  .tally .h{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+
+  .geo{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:20px}
+  @media (max-width:640px){.geo{grid-template-columns:1fr}}
+  .geo figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .geo svg{width:100%;max-width:170px;height:auto;overflow:visible}
+  .geo figcaption{font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:center;line-height:1.45}
+  .geo figcaption b{color:var(--ink);font-weight:500;display:block;margin-bottom:3px}
+  .geo .unit{fill:none;stroke:var(--rule);stroke-width:1.5}
+  .geo .shade{fill:var(--p-soft);stroke:var(--p);stroke-width:1.5}
+  .geo .shade2{fill:var(--m-soft);stroke:var(--m);stroke-width:1.5}
+  .geo .tickline{stroke:var(--ink);stroke-width:1.5}
+  .geo text{font-family:var(--mono);font-size:9px;fill:var(--muted)}
+  .ladder{margin-top:20px;overflow-x:auto}
+  .ladder table{border-collapse:collapse;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums;min-width:520px;width:100%}
+  .ladder th{font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+             text-align:right;padding:0 10px 8px;border-bottom:1px solid var(--rule)}
+  .ladder th:first-child,.ladder td:first-child{text-align:left}
+  .ladder td{padding:5px 10px;color:var(--muted)}
+  .ladder td.key{color:var(--ink)}
+  .ladder .two{background:var(--m-soft)}
+  .ladder tr.rms td{border-top:1px solid var(--rule);padding-top:8px}
+  .notice{font-size:13px;color:var(--muted);margin-top:10px;min-height:20px}
+  .notice.warn{color:var(--flag)}
+  footer{margin-top:34px;border-top:1px solid var(--rule);padding-top:18px;color:var(--muted);font-size:13.5px;max-width:72ch}
+  footer h3{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  footer ul{margin:0 0 14px;padding-left:18px}
+  footer li{margin-bottom:6px}
+  footer b{color:var(--ink);font-weight:500}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Quest for Entropy · the toy, by hand</p>
+  <h1>The Table Bench</h1>
+  <p class="lede">The whole life of one table, one move at a time: a particle <b>ticks</b>, a detector <b>meets</b> it, the joint table <b>turns</b>, and two books <b>settle</b> it into a fact. Everything before the last step is reversible and writes nothing.</p>
+
+  <div class="bar">
+    <button id="reset">Reset · random</button>
+    <button id="preset">Fresh · both at 30°</button>
+    <button id="walk">Walk the article</button>
+    <span class="spacer"></span>
+    <span class="hint" id="stagehint">Two separate tables. Tick each one as often as you like.</span>
+  </div>
+
+  <section class="step">
+    <div class="steptitle"><span class="n">1</span><h2>The threads</h2><span class="hint">a tick turns the pair of cells along that thread's own axis</span></div>
+    <div class="benches">
+      <div class="bench p" id="benchP">
+        <h3>P <span>· the particle</span></h3>
+        <div class="stage">
+          <div class="strip-p">
+            <div class="axis p"><svg width="12" height="86" viewBox="0 0 12 86" aria-hidden="true"><path d="M6 2V74" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M6 84 L2.2 73 L9.8 73 Z" fill="currentColor"/></svg><span>P's axis</span></div>
+            <div class="grid2" style="grid-template-columns:auto 96px">
+              <div class="lab p">P = 0</div><div class="cell" id="cellP0"></div>
+              <div class="lab p">P = 1</div><div class="cell" id="cellP1"></div>
+            </div>
+          </div>
+        </div>
+        <div class="dialrow">
+          <label for="dialP">dial</label>
+          <input type="range" id="dialP" min="0" max="180" step="1" value="30">
+          <output id="dialPout">30°</output>
+        </div>
+        <div class="dialrow">
+          <label for="phaseP" title="the direction of the P = 1 arrow relative to P = 0">phase</label>
+          <input type="range" id="phaseP" min="0" max="359" step="1" value="90">
+          <output id="phasePout">90°</output>
+        </div>
+        <div class="acts">
+          <button class="tick-p" id="tickP">tick P</button>
+          <button class="undo" id="undoP" title="turn by minus the dial">↺ untick</button>
+        </div>
+        <div class="readout" id="readP"></div>
+      </div>
+
+      <div class="bench m" id="benchM">
+        <h3>M <span>· the detector</span></h3>
+        <div class="stage">
+          <div class="strip-m">
+            <div class="axis m"><svg width="86" height="12" viewBox="0 0 86 12" aria-hidden="true"><path d="M2 6H74" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M84 6 L73 2.2 L73 9.8 Z" fill="currentColor"/></svg><span>M's axis</span></div>
+            <div>
+              <div class="heads"><div class="lab m">M = 0</div><div class="lab m">M = 1</div></div>
+              <div class="row"><div class="cell" id="cellM0"></div><div class="cell" id="cellM1"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="dialrow">
+          <label for="dialM">dial</label>
+          <input type="range" id="dialM" min="0" max="180" step="1" value="30">
+          <output id="dialMout">30°</output>
+        </div>
+        <div class="dialrow">
+          <label for="phaseM" title="the direction of the M = 1 arrow relative to M = 0">phase</label>
+          <input type="range" id="phaseM" min="0" max="359" step="1" value="90">
+          <output id="phaseMout">90°</output>
+        </div>
+        <div class="acts">
+          <button class="tick-m" id="tickM">tick M</button>
+          <button class="undo" id="undoM" title="turn by minus the dial">↺ untick</button>
+        </div>
+        <div class="readout" id="readM"></div>
+      </div>
+    </div>
+    <p class="aside"><b>Every cell holds one complex number, not a fraction.</b> The arrow's <b>length</b> is how much of the wave sits in that cell, a real number between 0 and 1, drawn as the bar under it. The <b>angle between the two arrows</b> is the phase, and the phase is what lets two contributions cancel later. Only that angle is real: turn both arrows of a thread together and nothing anyone can measure changes, which is why the phase slider moves one cell against the other. A thread ticking from a fresh start holds the two arrows at a right angle, one cell real and one imaginary, which is why they sit on the axes. Move the phase, or turn the joint table along both axes, and they leave them.</p>
+  </section>
+
+  <div class="center" style="margin-top:22px">
+    <button class="big" id="entangle">P meets M</button>
+    <p class="caption" id="meetcap">The meeting is the only move that touches both axes: the product of the two tables, then one swap.</p>
+  </div>
+
+  <section class="step" id="stepMeet" hidden>
+    <div class="steptitle"><span class="n">2</span><h2>The meeting, step by step</h2><span class="hint">product, then swap</span></div>
+    <div class="work" id="meetwork"></div>
+  </section>
+
+  <section class="step" id="stepJoint" hidden>
+    <div class="steptitle"><span class="n">3</span><h2>The joint table</h2><span class="hint">P turns the columns · M turns the rows</span></div>
+    <div class="jbody">
+      <div class="jtable">
+        <div></div>
+        <div class="axis m" style="justify-content:center"><svg width="86" height="12" viewBox="0 0 86 12" aria-hidden="true"><path d="M2 6H74" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M84 6 L73 2.2 L73 9.8 Z" fill="currentColor"/></svg><span>M's axis</span></div>
+        <div class="axis p"><svg width="12" height="86" viewBox="0 0 12 86" aria-hidden="true"><path d="M6 2V74" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M6 84 L2.2 73 L9.8 73 Z" fill="currentColor"/></svg><span>P's axis</span></div>
+        <div class="grid2">
+          <div></div><div class="lab m">M = 0</div><div class="lab m">M = 1</div>
+          <div class="lab p">P = 0</div><div class="cell c00" id="cellJ00"></div><div class="cell c01" id="cellJ01"></div>
+          <div class="lab p">P = 1</div><div class="cell c10" id="cellJ10"></div><div class="cell c11" id="cellJ11"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="acts">
+          <button class="tick-p" id="jtickP">tick P</button>
+          <button class="tick-m" id="jtickM">tick M</button>
+          <button class="undo" id="jundo">↺ undo last</button>
+        </div>
+        <div class="chips">
+          <span class="chip" id="chipTotal"></span>
+          <span class="chip" id="chipReceipt"></span>
+        </div>
+        <div class="lines" id="jlines"></div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+    <p class="aside" id="receiptSays"></p>
+    <p class="notice" id="notice"></p>
+  </section>
+
+  <div class="center" id="settleBar" style="margin-top:22px" hidden>
+    <div class="acts" style="justify-content:center">
+      <span class="hint">books that must agree:</span>
+      <button class="bk" data-k="1">1</button>
+      <button class="bk on" data-k="2">2</button>
+      <button class="bk" data-k="3">3</button>
+    </div>
+    <button class="big" id="settle">Settle</button>
+    <p class="caption" id="settleCap">Two books, two clocks, one line. This is the only move that writes anything, and the only one you cannot undo.</p>
+  </div>
+
+  <section class="step" id="stepSettle" hidden>
+    <div class="steptitle"><span class="n">4</span><h2>The settlement</h2><span class="hint">each book lays the four lengths end to end and signs for the line its unitdraw falls in</span></div>
+    <p class="aside" style="margin:0 0 16px"><b>Four lines, because a line names both parties.</b> It is not P's answer and then M's answer; it is one entry, "P reads this and M reads that", the way a double entry names both sides of a transaction. Two values each gives four of them. Four values each would give sixteen, every combination of the two multiplied, not added; the ones the meeting left empty simply take no room on the ruler. A book's <b>unitdraw</b> is not its dial: the dial is the angle it turns the table by, while the unitdraw is what its own clock shows at that tick, a number between 0 and 1 that nobody chooses.</p>
+    <div class="legend" id="settleLegend"></div>
+    <div id="ticks"></div>
+    <p class="notice" id="settleNotice"></p>
+    <div class="tally" id="tally"></div>
+    <div class="acts" style="margin-top:16px">
+      <button id="settleAgain">Settle again</button>
+      <span class="hint">puts the table back as it was before the fact and runs another settlement</span>
+    </div>
+  </section>
+
+  <section class="step" id="stepLadder" hidden>
+    <div class="steptitle"><span class="n">5</span><h2>One book, two books, three books</h2><span class="hint">the same table, settled thousands of times</span></div>
+    <p class="aside" style="margin-top:0"><b>Why the square, and whose lengths make it.</b> A book signs for a line in proportion to that line's length. One book alone is a needle dropped on a ruler: the chance of landing under a length is the length. Two books are two needles on two rulers, and the chance that <i>both</i> land under the same length is that length times itself, an area. The two sides of the square are the same line's length twice, one taken from each book: different books, same line, same length, which is why the square is a square and not a rectangle. Three books would be a volume.</p>
+    <p class="aside"><b>The number of books is the exponent.</b> Each extra book that has to agree multiplies a line's chance by its own length once more, so with <i>k</i> books a line is posted in proportion to its length to the power <i>k</i>. That is the whole ladder, and it says where the three rules hide their difference: when two lines are equally long, every power treats them alike and all three agree, so they only pull apart when one line is longer than the other, and further the more lopsided it gets. Quantum mechanics says the exponent is two. Watch it from the other side by settling with one book and with three in step 4: one book never refuses, because there is nobody to disagree with, and three refuse constantly and hand the long line a bigger win than it has earned.</p>
+    <div class="geo" id="geo"></div>
+    <div class="acts" style="margin-top:18px">
+      <button id="runLadder">Run 2,000 settlements of each</button>
+      <span class="hint" id="ladderCount">The third book is a hypothetical third signer, not a thread in this toy.</span>
+    </div>
+    <div class="ladder" id="ladderTable"></div>
+  </section>
+
+  <footer>
+    <h3>What to watch</h3>
+    <ul>
+      <li><b>A turn never changes a total.</b> The four squared lengths always add to 1.00, whichever axis you turn and however often. Length is what a turn cannot touch, which is why a book can sign for it.</li>
+      <li><b>The receipt holds.</b> It is set by the meeting and no later turn moves it. A turn cannot entangle a table and cannot un-entangle one; only the settlement spends it.</li>
+      <li><b>Order never matters.</b> P turns the columns, M turns the rows; they never touch the same pair, so tick P then M, or M then P, and you land on the same table.</li>
+      <li><b>Every move has an inverse</b> except the last one. Untick is the same turn by minus the dial and lands exactly where you were. Nothing undoes a posted fact.</li>
+      <li><b>Meet without ticking P.</b> All of P's length sits in one cell, the detector copies a value that was already definite, and the receipt is 0.00. Tick P to 45° first and it is 0.50, the largest it gets: a meeting entangles exactly as much as the particle was undecided.</li>
+      <li><b>Settle a few times.</b> Each line is posted about as often as its length squared, and no book ever computed a square: each one only compared one length against its own clock.</li>
+    </ul>
+    <h3>In physics words</h3>
+    <p style="margin:0 0 14px">Everything on this page except the last step is <b>unitary evolution</b>, the first of quantum mechanics' two processes. Unitary is from <i>unit</i>: the move is a rotation of the table that leaves every length as it found it, so the squares go on adding to one and a state that was a unit stays a unit. That is the same property you watch in the chip that never moves. In the standard theory the turn is written as a matrix U with U†U = 1, and the Schrödinger equation only ever produces such matrices. The second process is measurement, where the theory abandons the rotation and postulates that the odds are the amplitude squared. That second process is the one this toy replaces: here it is two books signing in proportion to length, and the square comes out rather than going in.</p>
+    <h3>What this is</h3>
+    <p style="margin:0 0 14px">The toy of <b>Quest for Entropy #17</b>, with its own rules and no library behind them: the turn, the meeting, the receipt and the settlement, run in front of you. Each book's unitdraws are a hash chain, every one the hash of the one before it, so nothing here rolls dice, and pressing the same buttons in the same order always gives the same fact.</p>
+    <h3>Not claimed</h3>
+    <p style="margin:0">That this derives the wave. The turn and the swap are standard quantum arithmetic written as a spreadsheet. What is replaced is the last step: instead of "probability equals amplitude squared", two books sign in proportion to length.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+
+  // ---- complex arithmetic -------------------------------------------------
+  const C = (re, im) => ({re: re, im: im || 0});
+  const cadd = (a,b) => C(a.re+b.re, a.im+b.im);
+  const csub = (a,b) => C(a.re-b.re, a.im-b.im);
+  const cmul = (a,b) => C(a.re*b.re - a.im*b.im, a.re*b.im + a.im*b.re);
+  const cscale = (a,s) => C(a.re*s, a.im*s);
+  const cimul = a => C(-a.im, a.re);                 // i · a
+  const abs2 = a => a.re*a.re + a.im*a.im;
+  const cabs = a => Math.hypot(a.re, a.im);
+
+  // the turn: new z0 = cos t·z0 + i sin t·z1 ; new z1 = i sin t·z0 + cos t·z1
+  function turnPair(z0, z1, t){
+    const c = Math.cos(t), s = Math.sin(t);
+    return [ cadd(cscale(z0,c), cscale(cimul(z1),s)),
+             cadd(cscale(cimul(z0),s), cscale(z1,c)) ];
+  }
+  const receiptOf = J => cabs(csub(cmul(J[0][0],J[1][1]), cmul(J[0][1],J[1][0])));
+  const totalOf = arr => arr.reduce((s,z) => s + abs2(z), 0);
+  const flat = J => [J[0][0],J[0][1],J[1][0],J[1][1]];
+  const LINE = ["P = 0, M = 0", "P = 0, M = 1", "P = 1, M = 0", "P = 1, M = 1"];
+
+  function fmt(z){
+    let re = Math.round(z.re*100)/100, im = Math.round(z.im*100)/100;
+    if(re === 0) re = 0; if(im === 0) im = 0;
+    if(Math.abs(im) < 0.005) return re.toFixed(2).replace("-","−");
+    if(Math.abs(re) < 0.005) return im.toFixed(2).replace("-","−") + "i";
+    return re.toFixed(2).replace("-","−") + (im > 0 ? "+" : "−") + Math.abs(im).toFixed(2) + "i";
+  }
+  const pad = (s,n) => { s = String(s); while(s.length < n) s += " "; return s; };
+
+  // ---- the unitdraw: a hash chain per thread -------------------------------
+  // record 1 hashes the thread's name; every later record hashes the previous unitdraw
+  function fnv(s){
+    let h = 2166136261 >>> 0;
+    for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    h ^= h >>> 16; h = Math.imul(h, 2246822507) >>> 0;
+    h ^= h >>> 13; h = Math.imul(h, 3266489909) >>> 0;
+    h ^= h >>> 16;
+    return h >>> 0;
+  }
+  const chains = {};                       // name -> {n, h}: where each thread's chain has got to
+  function unitdraw(name, n){
+    let c = chains[name];
+    if(!c || c.n > n) c = {n: 0, h: fnv(name)};
+    while(c.n < n){ c.h = fnv(c.h.toString(16)); c.n++; }
+    chains[name] = c;
+    return c.h / 4294967296;
+  }
+
+  // ---- cells --------------------------------------------------------------
+  const NS = "http://www.w3.org/2000/svg";
+  function makeCell(node){
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class","dial"); svg.setAttribute("viewBox","-1.25 -1.25 2.5 2.5"); svg.setAttribute("aria-hidden","true");
+    const ring = document.createElementNS(NS,"circle");
+    ring.setAttribute("class","ring"); ring.setAttribute("r","1"); ring.setAttribute("cx","0"); ring.setAttribute("cy","0");
+    const nil = document.createElementNS(NS,"circle");
+    nil.setAttribute("class","nil"); nil.setAttribute("r","0.09"); nil.setAttribute("cx","0"); nil.setAttribute("cy","0");
+    const arrow = document.createElementNS(NS,"path"); arrow.setAttribute("class","arrow");
+    svg.appendChild(ring); svg.appendChild(nil); svg.appendChild(arrow);
+    const num = document.createElement("span"); num.className = "num";
+    const bar = document.createElement("div"); bar.className = "bar-l";
+    const fill = document.createElement("i"); bar.appendChild(fill);
+    node.appendChild(svg); node.appendChild(num); node.appendChild(bar);
+    return {
+      node: node,
+      set: function(z){
+        const x = z.re, y = -z.im, L = Math.hypot(x,y);
+        if(L < 0.035){ arrow.setAttribute("d",""); nil.style.display = ""; }
+        else{
+          nil.style.display = "none";
+          const ux = x/L, uy = y/L, hl = Math.min(0.3, L*0.5), hw = hl*0.52;
+          const bx = x - ux*hl, by = y - uy*hl, px = -uy, py = ux;
+          arrow.setAttribute("d",
+            "M0 0L" + bx.toFixed(3) + " " + by.toFixed(3) +
+            "M" + x.toFixed(3) + " " + y.toFixed(3) +
+            "L" + (bx+px*hw).toFixed(3) + " " + (by+py*hw).toFixed(3) +
+            "L" + (bx-px*hw).toFixed(3) + " " + (by-py*hw).toFixed(3) + "Z");
+        }
+        num.textContent = fmt(z);
+        fill.style.width = (Math.min(1,L)*100).toFixed(1) + "%";
+        node.classList.toggle("lit", L >= 0.035);
+      }
+    };
+  }
+  const cell = {
+    P:[makeCell($("cellP0")), makeCell($("cellP1"))],
+    M:[makeCell($("cellM0")), makeCell($("cellM1"))],
+    J:[[makeCell($("cellJ00")), makeCell($("cellJ01"))],
+       [makeCell($("cellJ10")), makeCell($("cellJ11"))]]
+  };
+
+  // ---- state --------------------------------------------------------------
+  let st = null, busy = false, anchorReceipt = null, undoStack = [];
+
+  // a general state: a split between the two cells, and a phase between their arrows
+  function strip(splitDeg, phaseDeg){
+    const a = splitDeg*Math.PI/180, ph = phaseDeg*Math.PI/180;
+    return [C(Math.cos(a), 0), C(Math.sin(a)*Math.cos(ph), Math.sin(a)*Math.sin(ph))];
+  }
+  function randomStrip(){
+    return strip(10 + Math.random()*70, Math.floor(Math.random()*360));
+  }
+  function phaseOf(s){                                 // the angle from the P = 0 arrow to the P = 1 arrow
+    if(cabs(s[0]) < 1e-9 || cabs(s[1]) < 1e-9) return null;
+    let d = (Math.atan2(s[1].im, s[1].re) - Math.atan2(s[0].im, s[0].re)) * 180/Math.PI;
+    d = ((d % 360) + 360) % 360;
+    return Math.round(d);
+  }
+  function syncPhase(which){
+    const s = which === "P" ? st.P : st.M, p = phaseOf(s);
+    if(p === null) return;
+    st["phase" + which] = p;
+    $("phase" + which).value = p; $("phase" + which + "out").textContent = p + "°";
+  }
+  function applyPhase(which, deg){                     // turn that thread's candidate-1 arrows only
+    const delta = (deg - st["phase" + which]) * Math.PI/180;
+    const u = C(Math.cos(delta), Math.sin(delta));
+    if(st.stage === "apart"){
+      if(which === "P") st.P[1] = cmul(st.P[1], u); else st.M[1] = cmul(st.M[1], u);
+    } else if(which === "P"){
+      st.J[1][0] = cmul(st.J[1][0], u); st.J[1][1] = cmul(st.J[1][1], u);
+    } else {
+      st.J[0][1] = cmul(st.J[0][1], u); st.J[1][1] = cmul(st.J[1][1], u);
+    }
+    st["phase" + which] = deg;
+    $("phase" + which + "out").textContent = deg + "°";
+    render();
+  }
+  function reset(random){
+    st = {
+      stage: "apart",
+      P: random ? randomStrip() : [C(1,0), C(0,0)],
+      M: random ? randomStrip() : [C(1,0), C(0,0)],
+      J: [[C(1,0),C(0,0)],[C(0,0),C(0,0)]],
+      dialP: random ? 5*Math.round((10 + Math.random()*65)/5) : 30,
+      dialM: random ? 5*Math.round((10 + Math.random()*65)/5) : 30,
+      phaseP: 90, phaseM: 90,
+      log: [], reads: {P:0, M:0}, books: 2, settled: false, preSettle: null,
+      tally: {1:[0,0,0,0], 2:[0,0,0,0], 3:[0,0,0,0]}
+    };
+    document.querySelectorAll(".bk").forEach(b => b.classList.toggle("on", b.dataset.k === "2"));
+    anchorReceipt = null; undoStack = [];
+    $("dialP").value = st.dialP; $("dialPout").textContent = st.dialP + "°";
+    $("dialM").value = st.dialM; $("dialMout").textContent = st.dialM + "°";
+    syncPhase("P"); syncPhase("M");
+    $("phaseP").value = st.phaseP; $("phasePout").textContent = st.phaseP + "°";
+    $("phaseM").value = st.phaseM; $("phaseMout").textContent = st.phaseM + "°";
+    $("stepMeet").hidden = true; $("stepJoint").hidden = true; $("stepSettle").hidden = true;
+    $("settleBar").hidden = true; $("stepLadder").hidden = true;
+    ladder.reads = {}; ladder.counts = [[0,0,0,0],[0,0,0,0],[0,0,0,0]]; ladder.n = 0;
+    $("geo").innerHTML = ""; $("ladderTable").innerHTML = "";
+    $("ladderCount").textContent = "The third book is a hypothetical third signer, not a thread in this toy.";
+    $("benchP").classList.remove("merged"); $("benchM").classList.remove("merged");
+    $("meetcap").textContent = "The meeting is the only move that touches both axes: the product of the two tables, then one swap.";
+    $("stagehint").textContent = "Two separate tables. Tick each one as often as you like.";
+    $("notice").textContent = ""; $("notice").classList.remove("warn");
+    $("settleNotice").textContent = ""; $("settleNotice").classList.remove("warn");
+    $("ticks").innerHTML = ""; $("tally").innerHTML = ""; $("log").innerHTML = "";
+    $("settle").textContent = "Settle";
+    for(let i=0;i<2;i++) for(let j=0;j<2;j++) cell.J[i][j].node.classList.remove("posted");
+    render(); setButtons();
+  }
+
+  function note(text){
+    st.log.unshift(text);
+    st.log = st.log.slice(0, 14);
+    $("log").innerHTML = st.log.map(l => "<div>" + l + "</div>").join("");
+  }
+
+  // ---- lengths ------------------------------------------------------------
+  function lineLengths(){
+    const cells = flat(st.J), tot = totalOf(cells);
+    return cells.map(z => Math.sqrt(abs2(z)/tot));
+  }
+
+  // ---- rendering ----------------------------------------------------------
+  function render(){
+    cell.P[0].set(st.P[0]); cell.P[1].set(st.P[1]);
+    cell.M[0].set(st.M[0]); cell.M[1].set(st.M[1]);
+    for(let i=0;i<2;i++) for(let j=0;j<2;j++) cell.J[i][j].set(st.J[i][j]);
+    $("readP").innerHTML = lengthsLine(st.P, "P");
+    $("readM").innerHTML = lengthsLine(st.M, "M");
+    if(st.stage === "joint"){
+      const tot = totalOf(flat(st.J)), rec = receiptOf(st.J), L = lineLengths();
+      $("chipTotal").innerHTML = "squares add to <b>" + tot.toFixed(2) + "</b>";
+      $("chipTotal").className = "chip held";
+      $("chipReceipt").innerHTML = "receipt <b>" + rec.toFixed(2) + "</b>" + (st.settled ? " · spent" : "");
+      $("chipReceipt").className = "chip " +
+        (anchorReceipt === null ? "" : (Math.abs(rec - anchorReceipt) < 0.005 ? "held" : "flag"));
+      $("jlines").innerHTML =
+        L.map((v,k) => row("length " + LINE[k], v)).join("") +
+        row("row P = 0", Math.hypot(L[0],L[1])) + row("row P = 1", Math.hypot(L[2],L[3])) +
+        row("column M = 0", Math.hypot(L[0],L[2])) + row("column M = 1", Math.hypot(L[1],L[3]));
+    }
+  }
+  function row(label, v){ return "<span>" + label + "</span><b>" + v.toFixed(2) + "</b>"; }
+  function lengthsLine(strip, who){
+    const t = totalOf(strip);
+    return "<span>length " + who + " = 0 <b>" + Math.sqrt(abs2(strip[0])/t).toFixed(2) + "</b></span>" +
+           "<span>length " + who + " = 1 <b>" + Math.sqrt(abs2(strip[1])/t).toFixed(2) + "</b></span>" +
+           "<span>squares add to <b>" + t.toFixed(2) + "</b></span>";
+  }
+
+  // ---- the turn, animated as the group action ----------------------------
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  function animate(apply, theta){
+    return new Promise(function(resolve){
+      busy = true; setButtons();
+      const dur = reduced.matches ? 0 : 620, t0 = performance.now();
+      function frame(now){
+        const u = dur === 0 ? 1 : Math.min(1, (now - t0)/dur);
+        const e = u < 0.5 ? 2*u*u : 1 - Math.pow(-2*u+2, 2)/2;
+        apply(theta*e); render();
+        if(u < 1) requestAnimationFrame(frame);
+        else { busy = false; setButtons(); resolve(); }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  const wait = ms => new Promise(r => setTimeout(r, reduced.matches ? Math.min(ms,30) : ms));
+
+  function setButtons(){
+    const apart = st.stage === "apart";
+    $("tickP").disabled = busy || !apart; $("undoP").disabled = busy || !apart;
+    $("tickM").disabled = busy || !apart; $("undoM").disabled = busy || !apart;
+    $("phaseP").disabled = busy || st.settled; $("phaseM").disabled = busy || st.settled;
+    $("entangle").disabled = busy || !apart;
+    $("jtickP").disabled = busy || apart; $("jtickM").disabled = busy || apart;
+    $("jundo").disabled = busy || apart || undoStack.length === 0;
+    $("settle").disabled = busy || apart;
+    $("settleAgain").disabled = busy;
+    $("reset").disabled = busy; $("preset").disabled = busy; $("walk").disabled = busy;
+  }
+
+  function tickStrip(which, sign){
+    if(busy || st.stage !== "apart") return Promise.resolve();
+    const base = (which === "P" ? st.P : st.M).map(z => C(z.re, z.im));
+    const deg = which === "P" ? st.dialP : st.dialM;
+    return animate(function(t){
+      const out = turnPair(base[0], base[1], t);
+      if(which === "P") st.P = out; else st.M = out;
+    }, sign * deg * Math.PI/180).then(function(){ syncPhase(which); });
+  }
+
+  function tickJoint(which, sign, degOverride){
+    if(busy || st.stage !== "joint") return Promise.resolve();
+    const base = st.J.map(r => r.map(z => C(z.re,z.im)));
+    const deg = degOverride === undefined ? (which === "P" ? st.dialP : st.dialM) : degOverride;
+    const before = receiptOf(st.J);
+    return animate(function(t){
+      const J = [[null,null],[null,null]];
+      if(which === "P"){ for(let j=0;j<2;j++){ const o = turnPair(base[0][j], base[1][j], t); J[0][j]=o[0]; J[1][j]=o[1]; } }
+      else { for(let i=0;i<2;i++){ const o = turnPair(base[i][0], base[i][1], t); J[i][0]=o[0]; J[i][1]=o[1]; } }
+      st.J = J;
+    }, sign * deg * Math.PI/180).then(function(){
+      const after = receiptOf(st.J), tot = totalOf(flat(st.J));
+      if(sign > 0) undoStack.push({which: which, deg: deg});
+      note((sign > 0 ? which + " ticked " : which + " unticked ") + deg + "° · " +
+           (which === "P" ? "columns turned" : "rows turned") + " · receipt " + after.toFixed(2) +
+           (Math.abs(after-before) < 0.005 ? " (held)" : " (moved)") + " · total " + tot.toFixed(2));
+      if(st.settled){ st.settled = false; st.preSettle = null; $("settle").textContent = "Settle"; }
+      setButtons();
+    });
+  }
+
+  // ---- the meeting, written out ------------------------------------------
+  function meetWork(p, m, prod, swapped){
+    const r = [];
+    r.push("<div class='row'>the product: every cell = P's arrow × M's arrow</div>");
+    for(let i=0;i<2;i++) for(let j=0;j<2;j++){
+      r.push("<div class='row'>  cell (" + i + "," + j + ")  P = " + i + ", M = " + j + "   " +
+             pad(fmt(p[i]),8) + " × " + pad(fmt(m[j]),8) + " = <b>" + fmt(prod[i][j]) + "</b></div>");
+    }
+    r.push("<div class='row'>  receipt now |z00·z11 − z01·z10| = <b>" + receiptOf(prod).toFixed(2) +
+           "</b>   not entangled: one strip times the other</div>");
+    r.push("<div class='sep'></div>");
+    r.push("<div class='row on'>the swap: where P reads 1, M's two cells trade places</div>");
+    r.push("<div class='row'>  cell (1,0) " + pad(fmt(prod[1][0]),8) + " ⇄ cell (1,1) " + pad(fmt(prod[1][1]),8) + "</div>");
+    r.push("<div class='row'>  now P = 0 goes with M = 0 and P = 1 with M = 1: the detector has copied the particle</div>");
+    r.push("<div class='sep'></div>");
+    const a = cmul(swapped[0][0], swapped[1][1]), b = cmul(swapped[0][1], swapped[1][0]);
+    r.push("<div class='row on'>the receipt: |z00·z11 − z01·z10|</div>");
+    r.push("<div class='row'>  z is the usual letter for a complex number; the two digits are the two axes:</div>");
+    r.push("<div class='row'>  z00 = cell P = 0, M = 0   z01 = cell P = 0, M = 1   z10 = cell P = 1, M = 0   z11 = cell P = 1, M = 1</div>");
+    r.push("<div class='row'>  z00·z11 = " + fmt(swapped[0][0]) + " × " + fmt(swapped[1][1]) + " = " + fmt(a) + "</div>");
+    r.push("<div class='row'>  z01·z10 = " + fmt(swapped[0][1]) + " × " + fmt(swapped[1][0]) + " = " + fmt(b) + "</div>");
+    r.push("<div class='row'>  |" + fmt(a) + " − " + fmt(b) + "| = <b>" + receiptOf(swapped).toFixed(2) + "</b></div>");
+    $("meetwork").innerHTML = r.join("");
+  }
+
+  function entangle(){
+    if(busy || st.stage !== "apart") return Promise.resolve();
+    busy = true; setButtons();
+    const p = st.P.map(z => C(z.re,z.im)), m = st.M.map(z => C(z.re,z.im));
+    const prod = [[cmul(p[0],m[0]), cmul(p[0],m[1])],
+                  [cmul(p[1],m[0]), cmul(p[1],m[1])]];
+    const swapped = [[prod[0][0], prod[0][1]], [prod[1][1], prod[1][0]]];
+    st.J = prod.map(r => r.slice());
+    st.stage = "joint";
+    $("stepMeet").hidden = false; $("stepJoint").hidden = false;
+    $("benchP").classList.add("merged"); $("benchM").classList.add("merged");
+    $("stagehint").textContent = "One table, two axes. The two strips above are now the joint table below.";
+    $("meetcap").textContent = "The product: every cell is P's arrow × M's arrow. Nothing has happened yet, the table is still one strip times the other.";
+    anchorReceipt = null;
+    meetWork(p, m, prod, swapped);
+    render();
+    return wait(1100).then(function(){
+      $("meetcap").textContent = "The swap: where P reads 1, M's two cells trade places.";
+      const a = cell.J[1][0].node, b = cell.J[1][1].node;
+      if(!reduced.matches){ a.classList.add("swapping"); b.classList.add("swapping","back"); }
+      return wait(430).then(function(){
+        a.classList.remove("swapping"); b.classList.remove("swapping","back");
+        st.J = swapped.map(r => r.slice());
+        anchorReceipt = receiptOf(st.J);
+        render();
+        const ent = anchorReceipt >= 0.005;
+        $("meetcap").textContent = ent
+          ? "Entangled: no strip for P times a strip for M can make this table. Now turn it, or settle it."
+          : "This meeting entangled nothing. Turn the table and watch the receipt sit at zero.";
+        $("receiptSays").innerHTML = "<b>What the receipt means.</b> First the notation: z is the usual letter for a complex number, and the two digits name the two axes, so z00 is the cell where P reads 0 and M reads 0, z01 is P = 0 with M = 1, and so on. " +
+          "|z00·z11 − z01·z10| asks one question: can this table still be written as one strip for P times one strip for M? " +
+          "Zero means yes, the two threads are independent and each has its own state. Anything else means no, and the number says how far from separable it is: " +
+          "the answers are locked together, and nobody can say what P holds without saying what M holds. A turn cannot change it because each thread only ever turns along its own axis. Only the settlement spends it.";
+        $("notice").textContent = ent
+          ? "The receipt is " + anchorReceipt.toFixed(2) + ". Tick either thread as often as you like: it will not move."
+          : "The receipt came out 0.00. All of P's length sat in one cell, so the detector copied a value that was already definite and the pair stayed a product. Reset, tick P once, and meet again.";
+        $("notice").classList.toggle("warn", !ent);
+        note("P met M · product, then the swap · receipt " + anchorReceipt.toFixed(2));
+        $("settleBar").hidden = false; $("stepLadder").hidden = false;
+        busy = false; setButtons();
+      });
+    });
+  }
+
+  // ---- the settlement -----------------------------------------------------
+  const BOOKS = [
+    {name:"P", label:"P's book", short:"P", css:"p", soft:"var(--p-soft)"},
+    {name:"M", label:"M's book", short:"M", css:"m", soft:"var(--m-soft)"},
+    {name:"book2", label:"a third book", short:"the third book", css:"", soft:"var(--rule)"}
+  ];
+  function rulerHTML(shares, unitdraw, signed, who){
+    const colour = BOOKS[who].soft;
+    let segs = "";
+    for(let k=0;k<4;k++){
+      if(shares[k] <= 0.0005) continue;
+      segs += "<div class='seg' style='width:" + (shares[k]*100).toFixed(3) + "%;background:" +
+              (k === signed ? colour : (k % 2 ? "transparent" : "var(--sunk)")) + "'></div>";
+    }
+    return "<div class='ruler'>" + segs + "<div class='needle' data-r='" + unitdraw.toFixed(2) +
+           "' style='left:" + (unitdraw*100).toFixed(2) + "%'></div></div>";
+  }
+  function segmentOf(shares, r){
+    let acc = 0;
+    for(let k=0;k<4;k++){ acc += shares[k]; if(r < acc) return k; }
+    return 3;
+  }
+
+  function settleOnce(){
+    if(busy || st.stage !== "joint") return;
+    busy = true; setButtons();
+    if(!st.preSettle) st.preSettle = st.J.map(r => r.map(z => C(z.re,z.im)));
+    else st.J = st.preSettle.map(r => r.map(z => C(z.re,z.im)));
+    for(let i=0;i<2;i++) for(let j=0;j<2;j++) cell.J[i][j].node.classList.remove("posted");
+    st.settled = false; render();
+
+    const L = lineLengths(), sum = L.reduce((a,b) => a+b, 0), shares = L.map(x => x/sum);
+    $("stepSettle").hidden = false;
+    $("ticks").innerHTML = "";
+    $("settleNotice").textContent = ""; $("settleNotice").classList.remove("warn");
+    $("settleLegend").innerHTML =
+      "<span>each ruler is the four lengths laid end to end and divided by their sum, so it runs 0 to 1:</span>" +
+      LINE.map((n,k) => "<span>" + n + " · length <b>" + L[k].toFixed(2) + "</b> · share of the ruler <b>" +
+        shares[k].toFixed(2) + "</b>" + (shares[k] <= 0.0005 ? " · empty, no room on the ruler" : "") + "</span>").join("");
+
+    const nb = st.books, seq = [];
+    let guard = 0;
+    while(guard++ < 60){
+      const r = [], s = [];
+      for(let b=0;b<nb;b++){
+        const nm = BOOKS[b].name;
+        st.reads[nm] = (st.reads[nm] || 0) + 1;
+        r.push(unitdraw(nm, st.reads[nm]));
+        s.push(segmentOf(shares, r[b]));
+      }
+      const fact = s.every(v => v === s[0]);
+      seq.push({r:r, s:s, fact:fact});
+      if(fact) break;
+    }
+
+    let k = 0;
+    function step(){
+      if(k >= seq.length){                              // guard: no agreement inside 60 ticks
+        $("settleNotice").textContent = "60 ticks, no agreement yet. Press settle again to keep going.";
+        $("settleNotice").classList.add("warn");
+        busy = false; setButtons(); return;
+      }
+      const t = seq[k], n = k + 1;
+      const div = document.createElement("div");
+      div.className = "tickrow";
+      let rows = "<span class='n'>tick " + n + "</span>";
+      for(let b=0;b<t.s.length;b++){
+        rows += "<span class='who " + BOOKS[b].css + "'" + (b ? " style='grid-column:2'" : "") + ">" +
+                BOOKS[b].label + "</span>" + rulerHTML(shares, t.r[b], t.s[b], b);
+      }
+      const said = t.s.map((v,b) => BOOKS[b].short + " signed " + LINE[v]).join(", ");
+      div.innerHTML = rows +
+        "<span class='verdict" + (t.fact ? " fact" : "") + "'>" +
+          (t.fact ? (t.s.length === 1 ? "the only book signed " : "all " + (t.s.length === 2 ? "two" : "three") + " books signed ") +
+                    LINE[t.s[0]] + " — a fact, posted in " + (t.s.length === 1 ? "it" : "all of them")
+                  : said + " — a refusal, nothing posted") +
+        "</span>";
+      div.style.opacity = 0;
+      $("ticks").appendChild(div);
+      requestAnimationFrame(() => { div.style.transition = "opacity .25s"; div.style.opacity = 1; });
+      k++;
+      if(!seq[k-1].fact){ setTimeout(step, reduced.matches ? 30 : 780); return; }
+      finish(seq[k-1], shares, L);
+    }
+    step();
+
+    function finish(last, shares, L){
+      const line = last.s[0], i = line >> 1, j = line & 1;
+      setTimeout(function(){
+        for(let a=0;a<2;a++) for(let b=0;b<2;b++) if(!(a === i && b === j)) st.J[a][b] = C(0,0);
+        st.settled = true; anchorReceipt = 0; st.tally[st.books][line]++;
+        cell.J[i][j].node.classList.add("posted");
+        render();
+        $("settleNotice").innerHTML = "<b>" + LINE[line] + "</b> is now a record in both books. The table is narrowed: every other line is zero, " +
+          "the receipt is spent, and no turn brings the others back. " + (seq.length - 1) + " refusal" + (seq.length - 1 === 1 ? "" : "s") + " came first.";
+        note("settled · " + LINE[line] + " · " + (seq.length-1) + " refusals · receipt spent");
+        $("settle").textContent = "Settle";
+        renderTally(L);
+        busy = false; setButtons();
+      }, reduced.matches ? 30 : 700);
+    }
+  }
+
+  function renderTally(L){
+    const used = [1,2,3].filter(k => st.tally[k].reduce((a,b) => a+b, 0) > 0);
+    const totals = {}; used.forEach(k => { totals[k] = st.tally[k].reduce((a,b) => a+b, 0); });
+    let h = "<span class='h'>line</span><span class='h'>length²</span>" +
+            used.map(k => "<span class='h'>" + k + " book" + (k > 1 ? "s" : "") + "</span>").join("");
+    for(let j=0;j<4;j++){
+      h += "<span>" + LINE[j] + "</span><b>" + (L[j]*L[j]).toFixed(2) + "</b>" +
+           used.map(k => "<b>" + (st.tally[k][j]/totals[k]).toFixed(2) + "</b>").join("");
+    }
+    h += "<span style='grid-column:1/-1;margin-top:8px'>" +
+         used.map(k => totals[k] + " settled with " + k + " book" + (k > 1 ? "s" : "")).join(", ") +
+         ". By hand this is far too few to show anything; step 5 runs thousands. " +
+         "The odds of a line are its length squared, and no book ever squared anything: each one only compared a length against its own clock.</span>";
+    $("tally").style.gridTemplateColumns = "auto " + "auto ".repeat(used.length + 1);
+    $("tally").innerHTML = h;
+  }
+
+  // ---- one book, two books, three books ----------------------------------
+  const ladder = {reads:{}, counts:[[0,0,0,0],[0,0,0,0],[0,0,0,0]], n:0};
+
+  function ladderUnitdraw(name){
+    ladder.reads[name] = (ladder.reads[name] || 0) + 1;
+    return unitdraw(name, ladder.reads[name]);
+  }
+  function runSettlements(books, n, shares){
+    const names = ["P", "M", "book2"], counts = [0,0,0,0];
+    for(let t=0;t<n;t++){
+      let guard = 0;
+      while(guard++ < 400){
+        let first = -1, agree = true;
+        for(let b=0;b<books;b++){
+          const s = segmentOf(shares, ladderUnitdraw(names[b]));
+          if(b === 0) first = s; else if(s !== first) agree = false;
+        }
+        if(agree){ counts[first]++; break; }
+      }
+    }
+    return counts;
+  }
+
+  function geometry(shares, L){
+    let best = 0;
+    for(let k=1;k<4;k++) if(shares[k] > shares[best]) best = k;
+    const s = shares[best], S = 120, d = 34;                         // unit box size, isometric depth
+    const side = (s*S).toFixed(1), off = (S - s*S).toFixed(1);
+    const seg =
+      "<svg viewBox='-14 -34 " + (S+28) + " " + (S+48) + "' role='img'>" +
+      "<line class='unit' x1='0' y1='" + (S/2) + "' x2='" + S + "' y2='" + (S/2) + "'/>" +
+      "<line class='shade' x1='0' y1='" + (S/2) + "' x2='" + side + "' y2='" + (S/2) + "' stroke-width='9'/>" +
+      "<line class='tickline' x1='" + side + "' y1='" + (S/2-13) + "' x2='" + side + "' y2='" + (S/2+13) + "'/>" +
+      "<text x='0' y='" + (S/2+26) + "'>0</text><text x='" + (S-6) + "' y='" + (S/2+26) + "'>1</text>" +
+      "<text x='" + (side/2 - 10) + "' y='" + (S/2-16) + "'>" + s.toFixed(2) + "</text></svg>";
+    const sq =
+      "<svg viewBox='-14 -34 " + (S+28) + " " + (S+48) + "' role='img'>" +
+      "<rect class='unit' x='0' y='0' width='" + S + "' height='" + S + "'/>" +
+      "<rect class='shade' x='0' y='" + off + "' width='" + side + "' height='" + side + "'/>" +
+      "<text x='" + (side/2 - 10) + "' y='" + (S+16) + "'>" + s.toFixed(2) + "</text>" +
+      "<text x='-13' y='" + (+off + side/2) + "'>" + s.toFixed(2) + "</text></svg>";
+    const p = (x,y) => (x + d*0.6).toFixed(1) + "," + (y - d*0.5).toFixed(1);
+    const cube =
+      "<svg viewBox='-14 -44 " + (S+58) + " " + (S+58) + "' role='img'>" +
+      "<rect class='unit' x='0' y='0' width='" + S + "' height='" + S + "'/>" +
+      "<polygon class='unit' points='0,0 " + p(0,0) + " " + p(S,0) + " " + S + ",0'/>" +
+      "<polygon class='unit' points='" + S + ",0 " + p(S,0) + " " + p(S,S) + " " + S + "," + S + "'/>" +
+      "<rect class='shade' x='0' y='" + off + "' width='" + side + "' height='" + side + "'/>" +
+      "<polygon class='shade2' points='0," + off + " " + p(0,+off) + " " + p(+side,+off) + " " + side + "," + off + "'/>" +
+      "</svg>";
+    $("geo").innerHTML =
+      "<figure>" + seg + "<figcaption><b>one book</b>a needle on a ruler lands under the length: " +
+        s.toFixed(2) + "</figcaption></figure>" +
+      "<figure>" + sq + "<figcaption><b>two books</b>two needles, both under it: an area, " +
+        s.toFixed(2) + " × " + s.toFixed(2) + " = " + (s*s).toFixed(2) + "</figcaption></figure>" +
+      "<figure>" + cube + "<figcaption><b>three books</b>three needles: a volume, " +
+        s.toFixed(2) + "³ = " + (s*s*s).toFixed(2) + "</figcaption></figure>";
+    return best;
+  }
+
+  function runLadder(){
+    if(busy || st.stage !== "joint") return;
+    const L = st.preSettle ? (function(){
+      const cells = flat(st.preSettle), tot = totalOf(cells);
+      return cells.map(z => Math.sqrt(abs2(z)/tot));
+    })() : lineLengths();
+    const sum = L.reduce((a,b) => a+b, 0), shares = L.map(x => x/sum);
+    geometry(shares, L);
+    const n = 2000;
+    for(let k=0;k<3;k++){
+      const c = runSettlements(k+1, n, shares);
+      for(let j=0;j<4;j++) ladder.counts[k][j] += c[j];
+    }
+    ladder.n += n;
+    let head = "<tr><th>line</th><th>length</th><th>length², the quantum key</th><th>1 book</th><th class='two'>2 books</th><th>3 books</th></tr>";
+    let body = "";
+    for(let j=0;j<4;j++){
+      body += "<tr><td>" + LINE[j] + "</td><td>" + L[j].toFixed(3) + "</td><td class='key'>" + (L[j]*L[j]).toFixed(3) + "</td>" +
+        [0,1,2].map(k => "<td" + (k === 1 ? " class='two'" : "") + ">" +
+          (ladder.counts[k][j]/ladder.n).toFixed(3) + "</td>").join("") + "</tr>";
+    }
+    const rms = k => Math.sqrt(L.reduce((s,v,j) => s + Math.pow(ladder.counts[k][j]/ladder.n - v*v, 2), 0)/4);
+    body += "<tr class='rms'><td>distance from the key</td><td></td><td class='key'>0.000</td>" +
+      [0,1,2].map(k => "<td" + (k === 1 ? " class='two'" : "") + ">" + rms(k).toFixed(3) + "</td>").join("") + "</tr>";
+    $("ladderTable").innerHTML = "<table>" + head + body + "</table>";
+    $("ladderCount").textContent = ladder.n.toLocaleString() + " settlements each. With k books the odds come out as the length " +
+      "to the power k, put back on a scale of one. Only two books give the length squared.";
+  }
+
+  // ---- wiring -------------------------------------------------------------
+  $("dialP").addEventListener("input", e => { st.dialP = +e.target.value; $("dialPout").textContent = st.dialP + "°"; });
+  $("dialM").addEventListener("input", e => { st.dialM = +e.target.value; $("dialMout").textContent = st.dialM + "°"; });
+  $("phaseP").addEventListener("input", e => applyPhase("P", +e.target.value));
+  $("phaseM").addEventListener("input", e => applyPhase("M", +e.target.value));
+  $("tickP").addEventListener("click", () => tickStrip("P", 1));
+  $("undoP").addEventListener("click", () => tickStrip("P", -1));
+  $("tickM").addEventListener("click", () => tickStrip("M", 1));
+  $("undoM").addEventListener("click", () => tickStrip("M", -1));
+  $("entangle").addEventListener("click", entangle);
+  $("jtickP").addEventListener("click", () => tickJoint("P", 1));
+  $("jtickM").addEventListener("click", () => tickJoint("M", 1));
+  $("jundo").addEventListener("click", function(){
+    const last = undoStack.pop();
+    if(last) tickJoint(last.which, -1, last.deg);
+  });
+  $("settle").addEventListener("click", settleOnce);
+  $("settleAgain").addEventListener("click", settleOnce);
+  $("runLadder").addEventListener("click", runLadder);
+  document.querySelectorAll(".bk").forEach(function(b){
+    b.addEventListener("click", function(){
+      if(busy) return;
+      st.books = +b.dataset.k;
+      document.querySelectorAll(".bk").forEach(x => x.classList.toggle("on", x === b));
+      $("settleCap").textContent = st.books === 1
+        ? "One book. There is nobody to disagree with, so the first signature is already the fact: a line is posted in proportion to its length, full stop."
+        : st.books === 2
+          ? "Two books, two clocks, one line. This is the only move that writes anything, and the only one you cannot undo."
+          : "Three books. All three must name the same line, so refusals pile up and the longest line wins far more often than it should.";
+    });
+  });
+  $("reset").addEventListener("click", () => reset(true));
+  $("preset").addEventListener("click", function(){
+    reset(false);
+    note("fresh: P and M both at (1.00, 0.00), both dials 30°");
+  });
+  $("walk").addEventListener("click", function(){
+    if(busy) return;
+    reset(false);
+    note("walking article #17's example");
+    st.dialP = 30; $("dialP").value = 30; $("dialPout").textContent = "30°";
+    tickStrip("P", 1)
+      .then(() => wait(350))
+      .then(entangle)
+      .then(() => wait(600))
+      .then(function(){ st.dialP = 36; $("dialP").value = 36; $("dialPout").textContent = "36°"; return tickJoint("P", 1); })
+      .then(() => wait(350))
+      .then(function(){ st.dialM = 26; $("dialM").value = 26; $("dialMout").textContent = "26°"; return tickJoint("M", 1); })
+      .then(function(){
+        $("meetcap").textContent = "This is the table in the article's worked figure. Turned along both axes, the arrows point off the axes and the cells are properly complex.";
+      });
+  });
+
+  reset(false);
+  setButtons();
+})();
+</script>

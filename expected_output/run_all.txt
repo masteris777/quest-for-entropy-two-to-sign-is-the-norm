@@ -1,0 +1,40 @@
+
+EXAM 1 - one axis. Counted frequency of candidate 0 vs the answer key cos^2(t)
+  books:        1        2        3      (rms deviation from cos^2 over 13 angles)
+  rms:        0.102     0.008     0.057   
+  mean ticks: 1.00      1.57      2.50    
+  exact loop odds at 30 deg (answer key 0.750): 1 book(s) -> 0.634, 2 book(s) -> 0.750, 3 book(s) -> 0.839
+
+EXAM 2 - two axes. CHSH S = |E(a,b) - E(a,b') + E(a',b) + E(a',b')| (exact odds)
+  product table (no swap) : max S = 0.5000   receipt = 0.000   (classical bound 2, quantum 2*sqrt2 = 2.8284)
+  table after the meeting: max S = 2.8284   receipt = 0.500   (classical bound 2, quantum 2*sqrt2 = 2.8284)
+
+EXAM 3 - three axes. B's odds before and after a detector M meets P; the pair (P, M) settles
+  B turned by   0.0 deg: odds(B=0) pair only = 0.5000, after M met P = 0.5000
+  B turned by  22.5 deg: odds(B=0) pair only = 0.5000, after M met P = 0.5000
+  B turned by  45.0 deg: odds(B=0) pair only = 0.5000, after M met P = 0.5000
+  counted facts of the pair (P, M), lines 00 01 10 11: [0.504 0.    0.    0.496]  key: [0.5 0.  0.  0.5]
+  correlations in the 3-axis table: E(P,B) = +1.000, E(B,M) = +1.000
+  B's odds did not move; whom B agrees with did.
+saved C:\works\readings\entropy\public\quest-for-entropy-two-to-sign-is-the-norm\assets\tbl_worked.png
+ok
+saved C:\works\readings\entropy\public\quest-for-entropy-two-to-sign-is-the-norm\assets\tbl_signing.png ticks 7 fact P = 0, M = 0
+saved C:\works\readings\entropy\public\quest-for-entropy-two-to-sign-is-the-norm\assets\tbl_who_signs.png
+share of the long line 0.634  key 0.750
+  one decides alone        1 signer(s) -> 0.634
+  the two that met agree   2 signer(s) -> 0.750
+  all three agree          3 signer(s) -> 0.839
+saved gif_one_ticks.gif: 71 frames, 20.2 s, 0.23 MB
+saved gif_two_ticks.gif: 71 frames, 15.7 s, 0.36 MB
+========================================================================
+THE EXAMS (table_logic.py)
+========================================================================
+
+========================================================================
+THE FIGURES (written into assets/)
+========================================================================
+-- article_worked.py
+-- article_tables.py
+-- article_signing.py
+-- article_who_signs.py
+-- article_gifs.py
