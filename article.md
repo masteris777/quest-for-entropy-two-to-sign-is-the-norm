@@ -118,6 +118,8 @@ Stripped of books and ledgers, in the language physics already uses, the claim t
 
 The whole machine is one file, numpy only, and it runs the three exams in a couple of minutes: [github.com/masteris777/quest-for-entropy-two-to-sign-is-the-norm](https://github.com/masteris777/quest-for-entropy-two-to-sign-is-the-norm), one command: `python run_all.py`. The animations are in the same repository. And every move above can be made one button at a time, with the arithmetic written out as it happens, on [the table bench](https://questforentropy.com/demo/the-table-bench).
 
+Archived: DOI [10.5281/zenodo.22832653](https://zenodo.org/records/22832653).
+
 ## How this was made
 
 I'm a software architect. I built an adversarial research harness around AI agents and ran a physics toy-model programme through it; this piece reports a part that survived. The direction, the concepts, the questions and the accept/reject calls are mine; AI systems (Anthropic's Claude Fable, Opus and Sonnet, plus DeepSeek) executed the experiments from frozen, pre-declared specifications and wrote the text, this article included, from my guidance and under my editing. Every number is code-generated and reproducible from the repository above. A public honesty ledger records every commissioning error the process caught.
