@@ -6,6 +6,8 @@
 
 ## The question
 
+> The Paper: [paper/the-iceberg-model.md](https://github.com/questforentropy/iceberg-model/blob/main/paper/the-iceberg-model.md)
+
 Last episode ended with a promise: the universe that has to grow. That episode is still coming, but the plan changed. While preparing it I found something in the wave mechanics itself, and it will take a few episodes to bring in. This is the first.
 
 Last episode the wave arithmetic was imported. We put it behind a socket, plugged in the standard libraries, and showed what the ledger adds on top: no signalling, no order, no path. We are now working on the wave arithmetic itself. For these episodes the imported math stays, because it keeps the concepts simple, but I hope to bring in more of the wave mechanics in the episodes to come.
